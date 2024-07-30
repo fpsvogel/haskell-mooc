@@ -17,6 +17,8 @@ module Set1 where
 
 import Mooc.Todo
 
+import Flow
+
 ------------------------------------------------------------------------------
 -- Ex 1: define variables one and two. They should have type Int and
 -- values 1 and 2, respectively.
@@ -40,7 +42,7 @@ double x = x * 2
 -- four.
 
 quadruple :: Integer -> Integer
-quadruple x = double $ double x
+quadruple x = double <| double x
 
 ------------------------------------------------------------------------------
 -- Ex 4: define the function distance. It should take four arguments of

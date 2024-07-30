@@ -17,6 +17,8 @@ import Mooc.Todo
 -- Some imports you'll need. Don't add other imports :)
 import Data.List
 
+import Flow
+
 ------------------------------------------------------------------------------
 -- Ex 1: Define the constant years, that is a list of the values 1982,
 -- 2004 and 2020 in this order.
@@ -32,7 +34,7 @@ years = [1982,2004,2020]
 -- Hint! remember the take and drop functions.
 
 takeFinal :: Int -> [a] -> [a]
--- takeFinal n xs = reverse $ take n $ reverse xs
+-- takeFinal n xs = reverse <| take n <| reverse xs
 takeFinal n xs = drop (length xs - n) xs
 
 ------------------------------------------------------------------------------
@@ -61,7 +63,7 @@ updateAt i x xs = take i xs ++ [x] ++ drop (i + 1) xs
 --   substring 0 4 "abcdefgh"  ==>  "abcd"
 
 substring :: Int -> Int -> String -> String
--- substring i j s = reverse $ drop (length s - j) $ reverse $ drop i s
+-- substring i j s = reverse <| drop (length s - j) <| reverse <| drop i s
 substring i j s = drop i (take j s)
 
 ------------------------------------------------------------------------------
@@ -93,7 +95,7 @@ isPalindrome str = str == reverse str
 palindromify :: String -> String
 palindromify s
   | isPalindrome s  = s
-  | otherwise       = palindromify $ tail (init s)
+  | otherwise       = palindromify <| tail (init s)
 
 ------------------------------------------------------------------------------
 -- Ex 7: implement safe integer division, that is, a function that

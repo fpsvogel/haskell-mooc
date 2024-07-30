@@ -12,8 +12,7 @@ import Mooc.Todo
 import Data.Char
 import Data.Either
 import Data.List
-import Data.Function ( (&) )
-import Control.Arrow ( (>>>) )
+import Flow
 
 ------------------------------------------------------------------------------
 -- Ex 1: implement the function maxBy that takes as argument a
@@ -53,7 +52,7 @@ maxBy measure a b = maxByFlexible measure [a, b]
 -- fromArg (Arg a b) = b
 
 -- maxBy :: (a -> Int) -> a -> a -> a
--- maxBy measure a b = fromArg $ max (Arg (measure a) a) (Arg (measure b) b)
+-- maxBy measure a b = fromArg <| max (Arg (measure a) a) (Arg (measure b) b)
 
 -- -- SOLUTION 4.
 
@@ -152,7 +151,7 @@ palindrome string = string == reverse string
 --   capitalize "goodbye cruel world" ==> "Goodbye Cruel World"
 
 capitalize :: String -> String
-capitalize string = string & words & map capitalizeWord & unwords
+capitalize string = string |> words |> map capitalizeWord |> unwords
   where capitalizeWord (first:rest) = toUpper first : rest
 
 ------------------------------------------------------------------------------
@@ -170,7 +169,7 @@ capitalize string = string & words & map capitalizeWord & unwords
 --   * the function takeWhile
 
 powers :: Int -> Int -> [Int]
-powers k max = map (k ^) [0..] & takeWhile (<= max)
+powers k max = map (k ^) [0..] |> takeWhile (<= max)
 
 ------------------------------------------------------------------------------
 -- Ex 7: implement a functional while loop. While should be a function
@@ -260,7 +259,7 @@ joinToLength l s = [joined | a <- s, a' <- s, let joined = a ++ a', length joine
 -- [] +|+ ys = [head ys]
 -- xs +|+ ys = [head xs, head ys]
 
--- xs +|+ ys = map head $ filter (not . null) [xs,ys]
+-- xs +|+ ys = map head <| filter (not <. null) [xs,ys]
 
 xs +|+ ys = take 1 xs ++ take 1 ys
 
@@ -283,9 +282,9 @@ sumRights :: [Either a Int] -> Int
 --   where sumRight (Right n) = n
 --         sumRight (Left _) = 0
 
--- sumRights = sum . map (either (const 0) id)
+-- sumRights = sum <. map (either (const 0) id)
 
-sumRights = sum . map (fromRight 0)
+sumRights = sum <. map (fromRight 0)
 
 ------------------------------------------------------------------------------
 -- Ex 12: recall the binary function composition operation
@@ -302,7 +301,7 @@ sumRights = sum . map (fromRight 0)
 --   multiCompose [(+1), (2^), (3*)] 0 ==> 2
 
 multiCompose :: [a -> a] -> a -> a
-multiCompose = foldr (.) id
+multiCompose = foldr (<.) id
 
 ------------------------------------------------------------------------------
 -- Ex 13: let's consider another way to compose multiple functions. Given
@@ -324,8 +323,8 @@ multiCompose = foldr (.) id
 --   multiApp sum [head, (!!2), last] [1,9,2,9,3] ==> 6
 
 multiApp :: ([a] -> b) -> [c -> a] -> c -> b
--- multiApp f gs x = map (\g -> g x) gs & f
-multiApp f gs x = gs & map ($ x) & f
+-- multiApp f gs x = map (\g -> g x) gs |> f
+multiApp f gs x = gs |> map (<| x) |> f
 
 ------------------------------------------------------------------------------
 -- Ex 14: in this exercise you get to implement an interpreter for a
