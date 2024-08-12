@@ -3,6 +3,12 @@
 -- * defining algebraic datatypes
 -- * recursive datatypes
 
+-- these language extensions discovered at https://www.reddit.com/r/haskell/comments/x4ot3e/comment/imx54at/
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NoFieldSelectors #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+-- {-# LANGUAGE OverloadedRecordUpdate #-} -- incomplete; see https://gitlab.haskell.org/ghc/ghc/-/wikis/records/overloaded-record-fields, esp. #16232
+
 module Set5a where
 
 import Mooc.Todo
@@ -31,14 +37,14 @@ data BusTicket = SingleTicket | MonthlyTicket String
 --
 -- Implement the functions totalPrice and buyOneMore below.
 
-data ShoppingEntry = MkShoppingEntry String Double Int
+data ShoppingEntry = MkShoppingEntry { name :: String, price :: Double, count :: Int }
   deriving Show
 
 threeApples :: ShoppingEntry
-threeApples = MkShoppingEntry "Apple" 0.5 3
+threeApples = MkShoppingEntry {name = "Apple", price = 0.5, count = 3}
 
 twoBananas :: ShoppingEntry
-twoBananas = MkShoppingEntry "Banana" 1.1 2
+twoBananas = MkShoppingEntry {name = "Banana", price = 1.1, count = 2}
 
 -- totalPrice should return the total price for an entry
 --
@@ -50,7 +56,8 @@ twoBananas = MkShoppingEntry "Banana" 1.1 2
 --   totalPrice twoBananas   ==> 2.2
 
 totalPrice :: ShoppingEntry -> Double
-totalPrice (MkShoppingEntry _ price amount) = price * fromIntegral amount
+totalPrice entry = entry.price * fromIntegral entry.count
+-- totalPrice (MkShoppingEntry{price, count}) = price * fromIntegral count
 
 -- buyOneMore should increment the count in an entry by one
 --
@@ -58,7 +65,8 @@ totalPrice (MkShoppingEntry _ price amount) = price * fromIntegral amount
 --   buyOneMore twoBananas    ==> MkShoppingEntry "Banana" 1.1 3
 
 buyOneMore :: ShoppingEntry -> ShoppingEntry
-buyOneMore (MkShoppingEntry name price amount) = MkShoppingEntry name price (amount + 1)
+buyOneMore entry = entry{count = entry.count + 1}
+-- buyOneMore (MkShoppingEntry{name, price, count}) = MkShoppingEntry name price (count + 1)
 
 ------------------------------------------------------------------------------
 -- Ex 4: define a datatype Person, which should contain the age (an
@@ -67,28 +75,28 @@ buyOneMore (MkShoppingEntry name price amount) = MkShoppingEntry name price (amo
 -- Also define a Person value fred, and the functions getAge, getName,
 -- setAge and setName (see below).
 
-data Person = Person String Int
+data Person = MkPerson { name :: String, age :: Int }
   deriving Show
 
 -- fred is a person whose name is Fred and age is 90
 fred :: Person
-fred = Person "Fred" 90
+fred = MkPerson {name = "Fred", age = 90}
 
 -- getName returns the name of the person
 getName :: Person -> String
-getName (Person name _) = name
+getName p = p.name
 
 -- getAge returns the age of the person
 getAge :: Person -> Int
-getAge (Person _ age) = age
+getAge p = p.age
 
 -- setName takes a person and returns a new person with the name changed
 setName :: String -> Person -> Person
-setName name p = Person name (getAge p)
+setName name p = p{name} -- false warning; see https://gitlab.haskell.org/ghc/ghc/-/issues/25020
 
 -- setAge does likewise for age
 setAge :: Int -> Person -> Person
-setAge age p = Person (getName p) age
+setAge age p = p{age}
 
 ------------------------------------------------------------------------------
 -- Ex 5: define a datatype Position which contains two Int values, x
@@ -98,27 +106,27 @@ setAge age p = Person (getName p) age
 --   getY (up (up origin))    ==> 2
 --   getX (up (right origin)) ==> 1
 
-data Position = Pos Int Int
+data Position = MkPosition { x :: Int, y :: Int }
 
 -- origin is a Position value with x and y set to 0
 origin :: Position
-origin = Pos 0 0
+origin = MkPosition {x = 0, y = 0}
 
 -- getX returns the x of a Position
 getX :: Position -> Int
-getX (Pos x _)= x
+getX pos = pos.x
 
 -- getY returns the y of a position
 getY :: Position -> Int
-getY (Pos _ y)= y
+getY pos = pos.y
 
 -- up increases the y value of a position by one
 up :: Position -> Position
-up (Pos x y)= Pos x (y + 1)
+up pos = pos{y = pos.y + 1}
 
 -- right increases the x value of a position by one
 right :: Position -> Position
-right (Pos x y)= Pos (x + 1) y
+right pos = pos{x = pos.x + 1}
 
 ------------------------------------------------------------------------------
 -- Ex 6: Here's a datatype that represents a student. A student can
@@ -345,7 +353,7 @@ fromBin (O b) = 2 * fromBin b
 fromBin (I b) = 2 * fromBin b + 1
 
 toBin :: Int -> Bin
-toBin 0 = (O End)
+toBin 0 = O End
 toBin x = inc (toBin (x-1))
 
 -- toBin :: Int -> Bin
