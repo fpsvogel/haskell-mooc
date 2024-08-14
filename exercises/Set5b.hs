@@ -1,12 +1,16 @@
 -- Exercise set 5b: playing with binary trees
 
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NoFieldSelectors #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+
 module Set5b where
 
 import Mooc.Todo
 
 -- The next exercises use the binary tree type defined like this:
 
-data Tree a = Empty | Node a (Tree a) (Tree a)
+data Tree a = Empty | Node { value :: a, left :: Tree a, right :: Tree a }
   deriving (Show, Eq)
 
 ------------------------------------------------------------------------------
@@ -16,7 +20,7 @@ data Tree a = Empty | Node a (Tree a) (Tree a)
 
 valAtRoot :: Tree a -> Maybe a
 valAtRoot Empty = Nothing
-valAtRoot (Node val _ _) = Just val
+valAtRoot node = Just node.value
 
 ------------------------------------------------------------------------------
 -- Ex 2: compute the size of a tree, that is, the number of Node
@@ -28,7 +32,7 @@ valAtRoot (Node val _ _) = Just val
 
 treeSize :: Tree a -> Int
 treeSize Empty = 0
-treeSize (Node _ l r) = 1 + treeSize l + treeSize r
+treeSize node = 1 + treeSize node.left + treeSize node.right
 
 ------------------------------------------------------------------------------
 -- Ex 3: get the largest value in a tree of positive Ints. The
@@ -40,7 +44,10 @@ treeSize (Node _ l r) = 1 + treeSize l + treeSize r
 
 treeMax :: Tree Int -> Int
 treeMax Empty = 0
-treeMax (Node val l r) = max (max val (treeMax l)) (max val (treeMax r))
+treeMax node =
+  max
+    (max node.value (treeMax node.left))
+    (max node.value (treeMax node.right))
 
 ------------------------------------------------------------------------------
 -- Ex 4: implement a function that checks if all tree values satisfy a
@@ -53,7 +60,10 @@ treeMax (Node val l r) = max (max val (treeMax l)) (max val (treeMax r))
 
 allValues :: (a -> Bool) -> Tree a -> Bool
 allValues condition Empty = True
-allValues condition (Node val l r) = condition val && allValues condition l && allValues condition r
+allValues condition node =
+  condition node.value &&
+  allValues condition node.left &&
+  allValues condition node.right
 
 ------------------------------------------------------------------------------
 -- Ex 5: implement map for trees.
@@ -66,7 +76,7 @@ allValues condition (Node val l r) = condition val && allValues condition l && a
 
 mapTree :: (a -> b) -> Tree a -> Tree b
 mapTree f Empty = Empty
-mapTree f (Node val l r) = Node (f val) (mapTree f l) (mapTree f r)
+mapTree f node = Node (f node.value) (mapTree f node.left) (mapTree f node.right)
 
 ------------------------------------------------------------------------------
 -- Ex 6: given a value and a tree, build a new tree that is the same,
@@ -111,9 +121,9 @@ mapTree f (Node val l r) = Node (f val) (mapTree f l) (mapTree f r)
 
 cull :: Eq a => a -> Tree a -> Tree a
 cull val Empty = Empty
-cull val (Node v l r)
-  | val == v  = Empty
-  | otherwise = Node v (cull val l) (cull val r)
+cull val node
+  | val == node.value  = Empty
+  | otherwise = node{left = cull val node.left, right = cull val node.right}
 
 ------------------------------------------------------------------------------
 -- Ex 7: check if a tree is ordered. A tree is ordered if:
@@ -156,11 +166,11 @@ cull val (Node v l r)
 
 isOrdered :: Ord a => Tree a -> Bool
 isOrdered Empty = True
-isOrdered (Node val l r) =
-  allValues (< val) l &&
-  allValues (> val) r &&
-  isOrdered l &&
-  isOrdered r
+isOrdered node =
+  allValues (< node.value) node.left &&
+  allValues (> node.value) node.right &&
+  isOrdered node.left &&
+  isOrdered node.right
 
 ------------------------------------------------------------------------------
 -- Ex 8: a path in a tree can be represented as a list of steps that
@@ -180,9 +190,9 @@ data Step = StepL | StepR
 
 walk :: [Step] -> Tree a -> Maybe a
 walk _ Empty = Nothing
-walk [] (Node val _ _) = Just val
-walk (StepL:steps) (Node _ l _) = walk steps l
-walk (StepR:steps) (Node _ _ r) = walk steps r
+walk [] node = Just node.value
+walk (StepL:steps) node = walk steps node.left
+walk (StepR:steps) node = walk steps node.right
 
 ------------------------------------------------------------------------------
 -- Ex 9: given a tree, a path and a value, set the value at the end of
@@ -204,9 +214,9 @@ walk (StepR:steps) (Node _ _ r) = walk steps r
 
 set :: [Step] -> a -> Tree a -> Tree a
 set _ _ Empty = Empty
-set [] val (Node _ l r) = Node val l r
-set (StepL:steps) val (Node v l r) = Node v (set steps val l) r
-set (StepR:steps) val (Node v l r) = Node v l (set steps val r)
+set [] val node = node{value = val}
+set (StepL:steps) val node = node{left = set steps val node.left}
+set (StepR:steps) val node = node{right = set steps val node.right}
 
 ------------------------------------------------------------------------------
 -- Ex 10: given a value and a tree, return a path that goes from the
@@ -223,9 +233,9 @@ set (StepR:steps) val (Node v l r) = Node v l (set steps val r)
 
 search :: Eq a => a -> Tree a -> Maybe [Step]
 search _ Empty = Nothing
-search val (Node v l r)
-  | v == val = Just []
-  | otherwise = thread (search val l) (search val r)
+search val node
+  | node.value == val = Just []
+  | otherwise = thread (search val node.left) (search val node.right)
     where
       thread :: Maybe[Step] -> Maybe[Step] -> Maybe[Step]
       thread Nothing Nothing = Nothing
