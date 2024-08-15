@@ -133,7 +133,10 @@ renderListExample = renderList justADot (9,11) (9,11)
 --      ["000000","000000","000000"]]
 
 dotAndLine :: Picture
-dotAndLine = todo
+dotAndLine = Picture f
+  where f (Coord 3 4) = white
+        f (Coord _ 8) = pink
+        f _           = black
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -166,10 +169,13 @@ dotAndLine = todo
 --          ["7f0000","7f0000","7f0000"]]
 
 blendColor :: Color -> Color -> Color
-blendColor = todo
+blendColor (Color r1 g1 b1) (Color r2 g2 b2) =
+  Color (avg r1 r2) (avg g1 g2) (avg b1 b2)
+    where avg a b = (a + b) `div` 2
 
 combine :: (Color -> Color -> Color) -> Picture -> Picture -> Picture
-combine = todo
+combine f (Picture p1) (Picture p2) = Picture p
+  where p coord = f (p1 coord) (p2 coord)
 
 ------------------------------------------------------------------------------
 
@@ -182,7 +188,7 @@ blend = combine blendColor
 -- coordinates and returns a boolean indicating whether the
 -- coordinates belong to the shape.
 
-data Shape = Shape (Coord -> Bool)
+newtype Shape = Shape (Coord -> Bool)
 
 -- Here's a utility for testing
 contains :: Shape -> Int -> Int -> Bool
@@ -240,7 +246,8 @@ exampleCircle = fill red (circle 80 100 200)
 --        ["000000","000000","000000","000000","000000","000000"]]
 
 rectangle :: Int -> Int -> Int -> Int -> Shape
-rectangle x0 y0 w h = todo
+rectangle x0 y0 w h = Shape f
+  where f (Coord x y) = and [x >= x0, x < x0 + w, y >= y0, y < y0 + h]
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -256,10 +263,15 @@ rectangle x0 y0 w h = todo
 -- shape.
 
 union :: Shape -> Shape -> Shape
-union = todo
+union (Shape s1) (Shape s2) = Shape s
+  where
+    s coord = s1 coord || s2 coord
 
 cut :: Shape -> Shape -> Shape
-cut = todo
+cut (Shape s1) (Shape s2) = Shape s
+  where
+    s coord = s1 coord && not (s2 coord)
+
 ------------------------------------------------------------------------------
 
 -- Here's a snowman, built using union from circles and rectangles.
@@ -287,7 +299,10 @@ exampleSnowman = fill white snowman
 --        ["000000","000000","000000"]]
 
 paintSolid :: Color -> Shape -> Picture -> Picture
-paintSolid color shape base = todo
+paintSolid color (Shape s) (Picture base) = Picture p
+  where p coord
+          | s coord = color
+          | otherwise = base coord
 ------------------------------------------------------------------------------
 
 allWhite :: Picture
@@ -332,7 +347,10 @@ stripes a b = Picture f
 --       ["000000","000000","000000","000000","000000"]]
 
 paint :: Picture -> Shape -> Picture -> Picture
-paint pat shape base = todo
+paint (Picture pattern) (Shape s) (Picture base) = Picture p
+  where
+    p coord | s coord = pattern coord
+            | otherwise = base coord
 ------------------------------------------------------------------------------
 
 -- Here's a patterned version of the snowman example. See it by running:
@@ -392,22 +410,27 @@ xy = Picture f
 -- The FlipXY transform should switch the x and y coordinates, i.e.
 -- map (10,15) to (15,10).
 
-data Fill = Fill Color
+newtype Fill = Fill Color
 
 instance Transform Fill where
-  apply = todo
+  apply (Fill color) _ = Picture f
+    where f _ = color
 
-data Zoom = Zoom Int
+newtype Zoom = Zoom Int
   deriving Show
 
 instance Transform Zoom where
-  apply = todo
+  apply (Zoom z) p = zoom z p
 
 data Flip = FlipX | FlipY | FlipXY
   deriving Show
 
 instance Transform Flip where
-  apply = todo
+  apply FlipX (Picture f) = Picture p
+    where p (Coord x y) = f (Coord (-x) y)
+  apply FlipY (Picture f) = Picture p
+    where p (Coord x y) = f (Coord x (-y))
+  apply FlipXY p = flipXY p
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -420,10 +443,10 @@ instance Transform Flip where
 -- Hint: you might need a constraint on the instance
 
 data Chain a b = Chain a b
-  deriving Show
+  deriving (Show)
 
-instance Transform (Chain a b) where
-  apply = todo
+instance (Transform a, Transform b) => Transform (Chain a b) where
+  apply (Chain t1 t2) = apply t1 . apply t2
 ------------------------------------------------------------------------------
 
 -- Now we can redefine largeVerticalStripes using the above Transforms.
@@ -460,8 +483,33 @@ checkered = flipBlend largeVerticalStripes2
 data Blur = Blur
   deriving Show
 
+blurColors :: [Color] -> Color
+blurColors [] = Color 0 0 0
+blurColors cs = cdiv (foldr cadd (Color 0 0 0) cs) (length cs)
+  where
+    cadd (Color r1 g1 b1) (Color r2 g2 b2) = Color (r1 + r2) (g1 + g2) (b1 + b2)
+    cdiv (Color r g b) d = Color (div r d) (div g d) (div b d)
+
 instance Transform Blur where
-  apply = todo
+  apply Blur (Picture f) = Picture p
+    where
+      deltas = [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]
+      neighbours (Coord x y) = fmap (\(dx, dy) -> Coord (x + dx) (y + dy)) deltas
+      p coord = blurColors (fmap f $ neighbours coord)
+
+-- instance Transform Blur where
+--   apply _ (Picture f) = Picture (\(Coord x y) ->  avg (map (f . co) $ neighbours x y))
+--     where co t = Coord (fst t) (snd t)
+--           neighbours x y = [(x,y),(x-1,y),(x+1,y),(x,y-1),(x,y+1)]
+--           avg xs = divColor (foldr (sumColor) (Color 0 0 0) xs) (length xs)
+
+-- sumColor :: Color -> Color -> Color
+-- sumColor (Color r1 g1 b1) (Color r2 g2 b2) = Color (r1+r2) (g1+g2) (b1+b2)
+
+-- divColor :: Color -> Int -> Color
+-- divColor (Color x y z) i = Color (d x) (d y) (d z)
+--   where d c = (div) c i
+
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -475,11 +523,12 @@ instance Transform Blur where
 --        ["000000","141414","141414","141414","000000"],
 --        ["000000","000000","0a0a0a","000000","000000"]]
 
-data BlurMany = BlurMany Int
+newtype BlurMany = BlurMany Int
   deriving Show
 
 instance Transform BlurMany where
-  apply = todo
+  apply (BlurMany 0) p = p
+  apply (BlurMany n) p = apply (BlurMany (n-1)) (apply Blur p)
 ------------------------------------------------------------------------------
 
 -- Here's a blurred version of our original snowman. See it by running
