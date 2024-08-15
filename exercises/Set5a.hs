@@ -3,11 +3,15 @@
 -- * defining algebraic datatypes
 -- * recursive datatypes
 
--- these language extensions discovered at https://www.reddit.com/r/haskell/comments/x4ot3e/comment/imx54at/
+-- These language extensions discovered at:
+--   https://www.reddit.com/r/haskell/comments/x4ot3e/comment/imx54at/
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NoFieldSelectors #-}
 {-# LANGUAGE OverloadedRecordDot #-}
--- {-# LANGUAGE OverloadedRecordUpdate #-} -- incomplete; see https://gitlab.haskell.org/ghc/ghc/-/wikis/records/overloaded-record-fields, esp. #16232
+-- {-# LANGUAGE OverloadedRecordUpdate #-}
+--   OverloadedRecordUpdate is incomplete as of GHC 9.8.2.
+--   See https://gitlab.haskell.org/ghc/ghc/-/wikis/records/overloaded-record-fields
+--   Especially #16232 mentioned there.
 
 module Set5a where
 
@@ -92,7 +96,15 @@ getAge p = p.age
 
 -- setName takes a person and returns a new person with the name changed
 setName :: String -> Person -> Person
-setName name p = p{name} -- false warning; see https://gitlab.haskell.org/ghc/ghc/-/issues/25020
+setName name p = p{name}
+-- The line above produces a false compiler warning, as of GHC 9.8.2.
+-- See https://gitlab.haskell.org/ghc/ghc/-/issues/25020
+-- The warning:
+--   Ambiguous record update with parent type constructor ‘Person’.
+--   This type-directed disambiguation mechanism will not be supported by
+--   -XDuplicateRecordFields in future releases of GHC.
+--   Consider disambiguating using module qualification instead.
+--   typecheck(-Wambiguous-fields)
 
 -- setAge does likewise for age
 setAge :: Int -> Person -> Person
