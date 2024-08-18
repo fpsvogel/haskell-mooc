@@ -98,10 +98,6 @@ averages' (x:xs) sum count = ((sum + x)/count):(averages' xs (sum + x) (count + 
 alternate :: [a] -> [a] -> a -> [a]
 alternate xs ys z = cycle (xs ++ [z] ++ ys ++ [z])
 
--- -- TODO: why does this not work?
--- alternate :: [a] -> [a] -> a -> [a]
--- alternate xs ys z = cycle (xs:z:ys:z)
-
 ------------------------------------------------------------------------------
 -- Ex 6: Check if the length of a list is at least n. Make sure your
 -- function works for infinite inputs.
